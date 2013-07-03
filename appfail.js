@@ -1,3 +1,5 @@
+var request = require('request');
+
 exports.appfail = (function() {
 
 	// helper - generate fake guid
@@ -58,24 +60,47 @@ exports.appfail = (function() {
 		FailOccurrences: []
 	};
 
-	var setup = function(params) {
+	// Empty exception object
+    var exception = {
+        ExceptionType: "Javascript Error",
+        ExceptionMessage: "",
+        StackTrace: ""
+    };
+
+	var configure = function(params) {
 		var newConfig = merge(config,params);
 		config = newConfig;
 	};
 
-	var postErrors = function() {
-		// submit to REST api
+	// submit to REST api
+	var postError = function(error) {
+
+		request.post('https://api.appfail.net', {
+			error: error
+		}, function(error,response,body) {
+			// handle errors?
+			console.log(response);
+		});
+
 	};
 
 	// handle uncaught exceptions
 	process.on("uncaughtException", function(e) {
-		var newReport = cloneObject(newReport);
-		// grab stuff from errors
-		postErrors();
+
+		// clone existing templates
+		var newReport = cloneObject(report);
+		var newException = cloneObject(exception);
+		newReport.OccurrenceTimeUtc = (new Date).toUTCString();
+        newException.ExceptionMessage = e.message;
+        newException.StackTrace = e.stack;
+		newReport.Exceptions.push(newException);
+
+		postError(newReport);
+
 	});
 
 	return {
-		setup: setup
+		configure: configure
 	};
 
 }());
