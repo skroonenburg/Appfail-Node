@@ -1,0 +1,3 @@
+require("./appfail.js");
+
+test();
